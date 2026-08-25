@@ -11,32 +11,54 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Kiem tra secrets
+        id: check
+        env:
+          CLASPRC: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          if [ -z "$CLASPRC" ] || [ -z "$SCRIPT_ID" ]; then
+            echo "san_sang=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::Chua khai CLASPRC_JSON hoac SCRIPT_ID - bo qua deploy."
+          else
+            echo "san_sang=yes" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.san_sang == 'yes'
         with:
           node-version: '20'
 
       - name: Cai clasp
+        if: steps.check.outputs.san_sang == 'yes'
         run: npm install -g @google/clasp
 
       - name: Nap thong tin dang nhap
+        if: steps.check.outputs.san_sang == 'yes'
         env:
           CLASPRC: ${{ secrets.CLASPRC_JSON }}
         run: printf '%s' "$CLASPRC" > ~/.clasprc.json
 
       - name: Tao .clasp.json
+        if: steps.check.outputs.san_sang == 'yes'
         env:
           SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
-        run: echo "{\"scriptId\":\"$SCRIPT_ID\",\"rootDir\":\"src\"}" > .clasp.json
+          ROOT_DIR: ${{ vars.ROOT_DIR || 'src' }}
+        run: |
+          echo "{\"scriptId\":\"$SCRIPT_ID\",\"rootDir\":\"$ROOT_DIR\"}" > .clasp.json
+          cat .clasp.json
 
       - name: Day code len Apps Script
+        if: steps.check.outputs.san_sang == 'yes'
         run: clasp push --force
 
       - name: Cap nhat ban deploy web app
+        if: steps.check.outputs.san_sang == 'yes'
         env:
           DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
         run: |
           if [ -z "$DEPLOYMENT_ID" ]; then
-            echo "Chua co DEPLOYMENT_ID - chi push code, khong tao version moi."
+            echo "::notice::Chua co DEPLOYMENT_ID - chi push code, khong tao version moi."
             exit 0
           fi
           clasp deploy -i "$DEPLOYMENT_ID" -d "GitHub ${GITHUB_SHA::7}"
