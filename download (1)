@@ -1,9 +1,0 @@
-# Thông tin đăng nhập clasp — TUYỆT ĐỐI không commit
-.clasprc.json
-
-# scriptId gắn với từng môi trường, mỗi người tự tạo từ .clasp.json.example
-.clasp.json
-
-node_modules/
-.DS_Store
-*.log
